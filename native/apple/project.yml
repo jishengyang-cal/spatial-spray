@@ -1,0 +1,42 @@
+name: SpatialSpray
+
+options:
+  bundleIdPrefix: com.jishengyang
+  deploymentTarget:
+    iOS: "17.0"
+    visionOS: "1.0"
+
+settings:
+  base:
+    CURRENT_PROJECT_VERSION: 1
+    MARKETING_VERSION: 0.1.0
+    SWIFT_VERSION: "5.9"
+
+targets:
+  SpatialSprayiOS:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: SpatialSpray
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.jishengyang.spatialspray
+        PRODUCT_NAME: SpatialSpray
+        INFOPLIST_FILE: SpatialSpray/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+
+  SpatialSprayVision:
+    type: application
+    platform: visionOS
+    deploymentTarget: "1.0"
+    sources:
+      - path: SpatialSpray
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.jishengyang.spatialspray.vision
+        PRODUCT_NAME: SpatialSpray
+        INFOPLIST_FILE: SpatialSpray/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        TARGETED_DEVICE_FAMILY: "7"
+

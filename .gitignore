@@ -1,0 +1,17 @@
+node_modules/
+dist/
+.vite/
+playwright-report/
+test-results/
+.run/
+.env
+.env.*
+*.tsbuildinfo
+*.xcresult/
+*.xcarchive/
+*.ipa
+*.p12
+*.cer
+*.mobileprovision
+*.provisionprofile
+

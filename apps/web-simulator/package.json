@@ -1,0 +1,19 @@
+{
+  "name": "@spatial-spray/web-simulator",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 5177",
+    "build": "tsc -p tsconfig.json && vite build",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@spatial-spray/brush-engine": "workspace:*",
+    "@spatial-spray/contracts": "workspace:*"
+  },
+  "devDependencies": {
+    "vite": "^8.0.16"
+  }
+}
+

@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "name": "spatial-spray",
+  "hardBoundary": "Native iOS and visionOS build, signing, official simulator, device install, TestFlight, and App Store submission require macOS, Xcode, Apple SDKs, signing assets, and Apple-controlled credentials.",
+  "phases": [
+    {
+      "id": "contracts",
+      "title": "Shared contracts and brush model",
+      "capabilities": ["linux-runnable"],
+      "command": "pnpm build:packages",
+      "produces": ["auth contracts", "spray piece model", "brush particle engine"]
+    },
+    {
+      "id": "api",
+      "title": "MVP API",
+      "capabilities": ["linux-runnable"],
+      "command": "pnpm test:api",
+      "produces": ["dev login", "unique username", "nearby query", "spray creation", "report/block"]
+    },
+    {
+      "id": "web-simulator",
+      "title": "Map and camera simulator",
+      "capabilities": ["linux-runnable"],
+      "command": "pnpm test:e2e",
+      "produces": ["login flow", "username flow", "spray canvas", "nearby map"]
+    },
+    {
+      "id": "native-ios",
+      "title": "iPhone AR client",
+      "capabilities": ["mac-builder-required", "device-required"],
+      "command": null,
+      "produces": ["MapKit nearby discovery", "ARKit camera spray", "AR viewing"]
+    },
+    {
+      "id": "native-visionos",
+      "title": "Apple Vision Pro client",
+      "capabilities": ["mac-builder-required", "device-required"],
+      "command": null,
+      "produces": ["SwiftUI nearby discovery", "RealityKit immersive spray view"]
+    },
+    {
+      "id": "release-compliance",
+      "title": "Store and UGC compliance",
+      "capabilities": ["apple-account-required"],
+      "command": "pnpm compliance:check",
+      "produces": ["sign-in boundary", "UGC controls", "location privacy", "native toolchain boundary"]
+    }
+  ]
+}
+

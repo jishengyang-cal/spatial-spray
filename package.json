@@ -1,0 +1,28 @@
+{
+  "name": "spatial-spray",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.14.0",
+  "scripts": {
+    "dev": "pnpm --parallel dev:api dev:web",
+    "dev:api": "pnpm --filter @spatial-spray/api dev",
+    "dev:web": "pnpm --filter @spatial-spray/web-simulator dev",
+    "serve:api": "node services/api/dist/index.js",
+    "serve:web": "pnpm --filter @spatial-spray/web-simulator exec vite preview --host 127.0.0.1 --port 5177",
+    "build": "pnpm build:packages && pnpm --filter @spatial-spray/api build && pnpm --filter @spatial-spray/web-simulator build",
+    "build:packages": "pnpm --filter @spatial-spray/contracts build && pnpm --filter @spatial-spray/brush-engine build",
+    "typecheck": "pnpm build:packages && pnpm -r typecheck",
+    "compliance:check": "node scripts/compliance-check.mjs",
+    "workflow:check": "pnpm compliance:check && pnpm typecheck && pnpm build",
+    "test:api": "pnpm build && node tests/api.e2e.mjs",
+    "test:e2e": "pnpm build && playwright test",
+    "test": "pnpm test:api && pnpm test:e2e"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.60.0",
+    "@types/node": "^24.10.1",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.16"
+  }
+}

@@ -42,4 +42,3 @@ web simulator: http://127.0.0.1:5177
 
 See `docs/architecture.md`, `docs/compliance.md`, and
 `docs/workflows/apple-development.md`.
-

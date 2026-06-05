@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Spatial Spray - Cross-device AR creation workflow</title>
+    <meta
+      name="description"
+      content="Spatial Spray is a cross-device AR spray creation and discovery scaffold for iPhone and Apple Vision Pro with identity, location, moderation, simulator, and Mac Builder workflows."
+    />
+    <link rel="stylesheet" href="./assets/styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="#top" aria-label="Spatial Spray docs home">
+        <span class="brand-mark">S</span>
+        <span>
+          <strong>Spatial Spray</strong>
+          <small>read-only documentation surface</small>
+        </span>
+      </a>
+    </header>
+
+    <div class="layout" id="top">
+      <aside class="sidebar" aria-label="Section navigation">
+        <a href="#overview">Overview</a>
+        <a href="#problem">Problem</a>
+        <a href="#what-it-is">What it is</a>
+        <a href="#what-it-is-not">What it is not</a>
+        <a href="#architecture">Architecture</a>
+        <a href="#current-implementation">Current implementation</a>
+        <a href="#operator-workflow">Operator workflow</a>
+        <a href="#reference-docs">Reference docs</a>
+      </aside>
+
+      <main>
+        <section class="hero" id="overview">
+          <div class="hero-intro">
+            <p class="eyebrow">Cross-device AR creation and discovery scaffold</p>
+            <h1>Spatial Spray</h1>
+            <p class="product-subtitle">
+              Location-aware AR spray creation workflow for iPhone and Apple Vision Pro.
+            </p>
+            <p class="hero-copy">
+              Spatial Spray 是一个跨设备 AR 喷漆创作与发现产品脚手架。它把社交登录、唯一用户名、附近作品发现、
+              AR 喷漆笔刷模型、UGC moderation 和 Apple 原生构建请求拆成可验证的 contracts、API、web simulator
+              和 Mac Builder workflow。当前目标是验证产品闭环和工程边界，不声称已经是生产级社交网络或 App Store ready 应用。
+            </p>
+            <div class="value-grid" aria-label="Spatial Spray value points">
+              <article>
+                <span class="badge">Identity before publishing</span>
+                <h3>创作前先建立用户身份和唯一用户名。</h3>
+                <p>Apple、Google、Facebook 登录在 dev-mode adapter 中建模，生产 provider token 验证仍属于后续配置和服务端工作。</p>
+              </article>
+              <article>
+                <span class="badge">Location-indexed AR pieces</span>
+                <h3>喷漆作品以位置和 surface anchor 为核心对象。</h3>
+                <p>API 和 contracts 记录 geo point、surface pose、spray strokes、visibility 和 moderation state。</p>
+              </article>
+              <article>
+                <span class="badge">Moderated UGC workflow</span>
+                <h3>从第一版就把举报、屏蔽、删除和位置 denylist 纳入模型。</h3>
+                <p>AR UGC 不是单纯画笔效果，必须同时处理附近发现、公共空间、安全和审查流程。</p>
+              </article>
+            </div>
+            <div class="hero-actions">
+              <a class="button primary" href="#problem">查看解决的问题</a>
+              <a class="button" href="#architecture">查看架构</a>
+              <a class="button" href="#operator-workflow">查看流程</a>
+            </div>
+          </div>
+        </section>
+
+        <section class="section split" id="problem">
+          <div>
+            <p class="eyebrow">Problem</p>
+            <h2>AR 社交创作不是只有渲染效果，还要处理身份、位置和公共空间治理。</h2>
+            <p>
+              用户在真实室内、室外和公共建筑附近创作 AR 内容时，产品必须回答谁发布了内容、作品在哪里、其他用户如何发现、
+              不当内容如何举报、某些地点是否禁止创作，以及 iPhone 和 Vision Pro 如何看到同一套数据。
+            </p>
+            <p>
+              Native iOS 和 visionOS 构建仍然依赖 macOS、Xcode、ARKit、RealityKit、签名资产和设备测试。这个 repo
+              先用 Linux-runnable API、contracts 和 web simulator 验证产品规则，再通过 Mac Builder workflow 交给 Apple 工具链。
+            </p>
+          </div>
+          <div class="command-box">
+            <h3>Product risk it reduces</h3>
+            <p>
+              在投入真实设备、定位精度、App Store review 和生产登录 provider 前，先验证身份、附近发现、喷漆模型和 moderation workflow 是否可成立。
+            </p>
+          </div>
+        </section>
+
+        <section class="section" id="what-it-is">
+          <div class="section-heading">
+            <p class="eyebrow">What it is</p>
+            <h2>一个跨设备 AR UGC 产品的工程骨架。</h2>
+            <p>
+              Spatial Spray 把核心产品循环拆成 API、brush engine、web simulator、native Apple scaffold 和 Mac Builder handoff。
+              这让产品规则可以在 Linux 中验证，原生 AR 能力再由 Apple 平台承担。
+            </p>
+          </div>
+          <div class="feature-grid">
+            <article>
+              <span class="badge">Identity and username</span>
+              <h3>账户和身份边界</h3>
+              <p>Dev-mode provider login、refresh session 和 username reservation 支撑登录后创建唯一用户名的产品流程。</p>
+            </article>
+            <article>
+              <span class="badge">Spray domain model</span>
+              <h3>喷漆作品模型</h3>
+              <p>Spray piece 包含 owner、geo point、anchor payload、surface pose、strokes、visibility 和 moderation status。</p>
+            </article>
+            <article>
+              <span class="badge">Brush engine</span>
+              <h3>真实喷漆效果原型</h3>
+              <p>Brush engine 建模 particles、overspray、opacity、nozzle profile、drips 和 AR decal mesh data。</p>
+            </article>
+            <article>
+              <span class="badge">Moderation workflow</span>
+              <h3>UGC 治理入口</h3>
+              <p>Report、block、owner delete、admin hide/remove、audit log 和 location denylist 从 scaffold 阶段进入系统。</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="section" id="what-it-is-not">
+          <div class="section-heading">
+            <p class="eyebrow">What it is not</p>
+            <h2>当前仓库是产品和工程闭环 scaffold，不是生产承诺。</h2>
+            <p>边界写清楚可以避免把 web simulator、dev login 和 native scaffold 误解成上线能力。</p>
+          </div>
+          <div class="rule-grid">
+            <div>不是生产社交网络后端；当前 API 使用本地持久化状态。</div>
+            <div>不是 App Store ready 应用；仍需要真实签名、隐私材料、设备测试和 review 准备。</div>
+            <div>不是真实 provider 登录集成；生产必须服务端验证 Apple、Google 和 Facebook token。</div>
+            <div>不是全球厘米级 AR 锚定系统；MVP 以 manual-local anchors 和 surface pose 建模。</div>
+            <div>不是浏览器中的 ARKit 替代品；web simulator 用于产品和 API 验证。</div>
+            <div>不鼓励现实世界涂鸦或破坏财产；作品是数字 AR 内容。</div>
+          </div>
+        </section>
+
+        <section class="section" id="architecture">
+          <div class="section-heading">
+            <p class="eyebrow">Architecture</p>
+            <h2>从产品规则到 Apple 原生构建的控制链</h2>
+            <p>
+              API 和 contracts 定义共享对象；web simulator 验证用户流程；native Apple scaffold 承接 iPhone 和 Vision Pro 体验；
+              Mac Builder workflow 负责把 iOS/visionOS build request 交给真实 Xcode 执行面。
+            </p>
+          </div>
+          <div class="flow" aria-label="Spatial Spray architecture chain">
+            <div class="flow-node">Identity<br /><span>provider login / username</span></div>
+            <div class="flow-node">Spray API<br /><span>pieces / nearby / moderation</span></div>
+            <div class="flow-node">Brush engine<br /><span>particles / drips / decals</span></div>
+            <div class="flow-node">Web simulator<br /><span>map / camera / admin</span></div>
+            <div class="flow-node">Native Apple scaffold<br /><span>iPhone / Vision Pro</span></div>
+            <div class="flow-node">Mac Builder<br /><span>Xcode build artifacts</span></div>
+          </div>
+          <div class="diagram" aria-label="Spatial Spray product workflow diagram">
+            <svg viewBox="0 0 960 300" role="img" aria-labelledby="diagram-title diagram-desc">
+              <title id="diagram-title">Spatial Spray product workflow</title>
+              <desc id="diagram-desc">A workflow diagram from identity and spray API to web simulator, native Apple scaffold and Mac Builder.</desc>
+              <rect width="960" height="300" rx="8" fill="#f8faf5" />
+              <g font-family="Inter, Arial, sans-serif">
+                <text x="38" y="52" fill="#172018" font-size="26" font-weight="800">AR UGC product loop before native production launch</text>
+                <text x="40" y="82" fill="#5c665e" font-size="15">Identity, nearby discovery, brush behavior and moderation stay testable on Linux.</text>
+              </g>
+              <g transform="translate(42 126)" font-family="Inter, Arial, sans-serif">
+                <rect width="170" height="92" rx="8" fill="#fff" stroke="#cfd8ca" />
+                <text x="18" y="34" fill="#172018" font-size="16" font-weight="800">Identity</text>
+                <text x="18" y="58" fill="#5c665e" font-size="13">login / username</text>
+              </g>
+              <g transform="translate(250 126)" font-family="Inter, Arial, sans-serif">
+                <rect width="170" height="92" rx="8" fill="#fff" stroke="#cfd8ca" />
+                <text x="18" y="34" fill="#172018" font-size="16" font-weight="800">Spray API</text>
+                <text x="18" y="58" fill="#5c665e" font-size="13">pieces / nearby</text>
+              </g>
+              <g transform="translate(458 126)" font-family="Inter, Arial, sans-serif">
+                <rect width="170" height="92" rx="8" fill="#fff" stroke="#cfd8ca" />
+                <text x="18" y="34" fill="#172018" font-size="16" font-weight="800">Simulator</text>
+                <text x="18" y="58" fill="#5c665e" font-size="13">map / camera flow</text>
+              </g>
+              <g transform="translate(666 126)" font-family="Inter, Arial, sans-serif">
+                <rect width="210" height="92" rx="8" fill="#ecf4ee" stroke="#8bc39f" />
+                <text x="18" y="34" fill="#1f7a4d" font-size="16" font-weight="800">Apple native path</text>
+                <text x="18" y="58" fill="#4f6b59" font-size="13">ARKit / RealityKit / Xcode</text>
+              </g>
+              <g stroke="#1f7a4d" stroke-width="2">
+                <path d="M216 172h30" />
+                <path d="M424 172h30" />
+                <path d="M632 172h30" />
+              </g>
+            </svg>
+          </div>
+        </section>
+
+        <section class="section" id="current-implementation">
+          <div class="section-heading">
+            <p class="eyebrow">Current implementation</p>
+            <h2>当前主干中的可验证落点</h2>
+            <p>这些能力都能在 repo 的 contracts、API、brush engine、web simulator、native scaffold、tests 或 docs 中找到支撑。</p>
+          </div>
+          <div class="implementation-grid">
+            <article>
+              <h3>Auth and username</h3>
+              <p>Dev provider login adapters model Apple, Google and Facebook sign-in flow with refresh sessions and unique username reservation.</p>
+            </article>
+            <article>
+              <h3>Spray piece API</h3>
+              <p>Persistent local API supports spray creation, nearby lookup, clusters, visibility, owner delete and location denylist state.</p>
+            </article>
+            <article>
+              <h3>Brush engine</h3>
+              <p>Spray stroke model covers colors, nozzle, particles, overspray, opacity, drips, material and AR decal mesh data.</p>
+            </article>
+            <article>
+              <h3>Moderation primitives</h3>
+              <p>Report, block user, admin hide/remove and audit log flows are available in API and simulator paths.</p>
+            </article>
+            <article>
+              <h3>Web simulator</h3>
+              <p>Simulator validates login, username, map discovery, clusters, camera spray canvas and moderation actions.</p>
+            </article>
+            <article>
+              <h3>Native Apple scaffold</h3>
+              <p>Native source scaffold covers iPhone AR spray and Vision Pro mixed immersive viewing boundaries.</p>
+            </article>
+            <article>
+              <h3>Mac Builder workflow</h3>
+              <p>Mock builder and client scripts validate iOS/visionOS build request submission without requiring Xcode on Linux.</p>
+            </article>
+            <article>
+              <h3>Compliance docs</h3>
+              <p>Privacy, content policy, compliance and App Store review notes document product responsibilities before release work.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="section split" id="operator-workflow">
+          <div>
+            <p class="eyebrow">Operator workflow</p>
+            <h2>本地产品闭环和 Mac Builder 验证流程</h2>
+            <p>本地流程验证 contracts、API、web simulator 和 E2E；native build request 先走 mock builder，真实 iOS/visionOS build 仍需要远程 Mac。</p>
+            <ol class="steps">
+              <li>安装依赖：`pnpm install`。</li>
+              <li>运行 workflow 检查：`pnpm workflow:check`。</li>
+              <li>运行测试：`pnpm test`。</li>
+              <li>启动本地 API 和 web simulator：`pnpm dev`。</li>
+              <li>启动 mock builder：`pnpm native:mac-builder:mock`。</li>
+              <li>提交 visionOS build request：`SPATIAL_SPRAY_MAC_BUILDER_URL=http://127.0.0.1:4391 pnpm native:visionos-build:submit`。</li>
+            </ol>
+          </div>
+          <div class="command-box">
+            <h3>Command sequence</h3>
+            <pre><code>pnpm install
+pnpm workflow:check
+pnpm test
+pnpm dev
+pnpm native:mac-builder:mock
+SPATIAL_SPRAY_MAC_BUILDER_URL=http://127.0.0.1:4391 pnpm native:visionos-build:submit</code></pre>
+          </div>
+        </section>
+
+        <section class="section" id="reference-docs">
+          <div class="section-heading">
+            <p class="eyebrow">Reference docs</p>
+            <h2>后置参考信息</h2>
+            <p>这些链接用于定位真实工程 surface。docs-site 只提供 read-only 导览，不新增产品 authority。</p>
+          </div>
+          <div class="reference-grid">
+            <article>
+              <h3>Architecture</h3>
+              <p><a href="https://github.com/jishengyang-cal/spatial-spray/blob/main/docs/architecture.md">docs/architecture.md</a></p>
+            </article>
+            <article>
+              <h3>Apple development workflow</h3>
+              <p><a href="https://github.com/jishengyang-cal/spatial-spray/blob/main/docs/workflows/apple-development.md">docs/workflows/apple-development.md</a></p>
+            </article>
+            <article>
+              <h3>Compliance and content policy</h3>
+              <p><a href="https://github.com/jishengyang-cal/spatial-spray/tree/main/docs">docs/</a></p>
+            </article>
+            <article>
+              <h3>Native Apple scaffold</h3>
+              <p><a href="https://github.com/jishengyang-cal/spatial-spray/tree/main/native/apple">native/apple</a></p>
+            </article>
+          </div>
+        </section>
+
+        <footer class="footer">
+          <p>
+            GitHub Pages deployment: this site is a read-only documentation surface. The authoritative implementation remains in contracts,
+            services, brush engine, native source, workflow files, scripts and tests.
+          </p>
+          <p>
+            Source:
+            <a href="https://github.com/jishengyang-cal/spatial-spray">repository</a>
+            <a href="https://github.com/jishengyang-cal/spatial-spray/tree/main/docs">docs</a>
+            <a href="https://github.com/jishengyang-cal/spatial-spray/tree/main/workflows">workflows</a>
+          </p>
+        </footer>
+      </main>
+    </div>
+    <script src="./assets/app.js"></script>
+  </body>
+</html>
+

@@ -2,6 +2,12 @@
 
 Cross-device AR spray paint product scaffold for iPhone and Apple Vision Pro.
 
+## Documentation
+
+- GitHub Pages docs site: https://jishengyang-cal.github.io/spatial-spray/
+- Static site source: [`docs-site/`](docs-site/)
+- Architecture notes: [`docs/architecture.md`](docs/architecture.md)
+
 The product is a location-aware AR creation and discovery app:
 
 - users sign in with Apple, Google, or Facebook and claim a unique username

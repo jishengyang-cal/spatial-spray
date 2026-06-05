@@ -12,10 +12,10 @@
     },
     {
       "id": "api",
-      "title": "MVP API",
+      "title": "Persistent API and moderation control plane",
       "capabilities": ["linux-runnable"],
       "command": "pnpm test:api",
-      "produces": ["dev login", "unique username", "nearby query", "spray creation", "report/block"]
+      "produces": ["dev/provider login boundary", "refresh session", "unique username", "nearby query", "map clusters", "spray creation", "report/block", "admin moderation", "location denylist", "audit log"]
     },
     {
       "id": "web-simulator",
@@ -28,23 +28,36 @@
       "id": "native-ios",
       "title": "iPhone AR client",
       "capabilities": ["mac-builder-required", "device-required"],
-      "command": null,
-      "produces": ["MapKit nearby discovery", "ARKit camera spray", "AR viewing"]
+      "command": "pnpm native:ios-build:submit",
+      "produces": ["MapKit nearby discovery", "ARKit camera spray capture", "RealityKit preview paint", "spray publish"]
     },
     {
       "id": "native-visionos",
       "title": "Apple Vision Pro client",
       "capabilities": ["mac-builder-required", "device-required"],
-      "command": null,
-      "produces": ["SwiftUI nearby discovery", "RealityKit immersive spray view"]
+      "command": "pnpm native:visionos-build:submit",
+      "produces": ["SwiftUI nearby discovery", "RealityKit mixed immersive spray view", "nearby spray panel"]
+    },
+    {
+      "id": "mac-builder",
+      "title": "Remote Mac Builder adapter",
+      "capabilities": ["linux-runnable", "mac-builder-required", "mcp-candidate"],
+      "command": "pnpm native:mac-builder:check",
+      "produces": ["builder capability check", "mock worker", "build job request", "job polling", "artifact/log refs"]
     },
     {
       "id": "release-compliance",
       "title": "Store and UGC compliance",
       "capabilities": ["apple-account-required"],
       "command": "pnpm compliance:check",
-      "produces": ["sign-in boundary", "UGC controls", "location privacy", "native toolchain boundary"]
+      "produces": ["sign-in boundary", "UGC controls", "location privacy", "native toolchain boundary", "privacy/content/review drafts"]
+    },
+    {
+      "id": "ci",
+      "title": "Linux CI and native boundary guard",
+      "capabilities": ["linux-runnable"],
+      "command": "pnpm workflow:check && pnpm test",
+      "produces": ["typecheck", "build", "API e2e", "web e2e", "Mac Builder capability check"]
     }
   ]
 }
-

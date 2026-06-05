@@ -1,4 +1,8 @@
+import { existsSync } from "node:fs";
 import { defineConfig, devices } from "@playwright/test";
+
+const chromiumExecutablePath =
+  process.env.CHROMIUM_EXECUTABLE_PATH ?? (existsSync("/snap/bin/chromium") ? "/snap/bin/chromium" : undefined);
 
 export default defineConfig({
   testDir: "tests/playwright",
@@ -9,7 +13,7 @@ export default defineConfig({
   },
   webServer: [
     {
-      command: "PORT=4301 pnpm serve:api",
+      command: "rm -f .run/playwright-api-state.json && PORT=4301 SPATIAL_SPRAY_DATA_FILE=.run/playwright-api-state.json pnpm serve:api",
       url: "http://127.0.0.1:4301/health",
       reuseExistingServer: !process.env.CI,
       timeout: 20_000
@@ -26,9 +30,7 @@ export default defineConfig({
       name: "chromium",
       use: {
         ...devices["Desktop Chrome"],
-        launchOptions: {
-          executablePath: process.env.CHROMIUM_EXECUTABLE_PATH ?? "/snap/bin/chromium"
-        }
+        launchOptions: chromiumExecutablePath ? { executablePath: chromiumExecutablePath } : undefined
       }
     }
   ]

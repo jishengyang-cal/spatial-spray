@@ -8,14 +8,22 @@ const requiredFiles = [
   "docs/architecture.md",
   "docs/compliance.md",
   "docs/workflows/apple-development.md",
+  "docs/workflows/mac-builder.md",
+  "docs/privacy-policy.md",
+  "docs/content-policy.md",
+  "docs/app-store-review-notes.md",
   "workflows/spatial-spray.json",
   "packages/contracts/src/index.ts",
   "packages/brush-engine/src/index.ts",
   "services/api/src/index.ts",
   "apps/web-simulator/src/main.ts",
+  "scripts/mac-builder-check.mjs",
+  "scripts/mac-builder-mock.mjs",
+  ".github/workflows/ci.yml",
   "native/apple/project.yml",
   "native/apple/README.md",
   "native/apple/SpatialSpray/Info.plist",
+  "native/apple/SpatialSpray/Models/SprayBrushModel.swift",
   "native/apple/SpatialSpray/SpatialSprayApp.swift",
   "native/apple/SpatialSpray/Views/SprayARView.swift",
   "native/apple/SpatialSpray/Views/VisionSprayImmersiveView.swift"
@@ -28,7 +36,18 @@ for (const file of requiredFiles) {
 }
 
 const packageJson = JSON.parse(readFileSync("package.json", "utf8"));
-for (const script of ["build", "typecheck", "compliance:check", "workflow:check", "test:api", "test:e2e"]) {
+for (const script of [
+  "build",
+  "typecheck",
+  "compliance:check",
+  "workflow:check",
+  "test:api",
+  "test:e2e",
+  "native:mac-builder:mock",
+  "native:mac-builder:check",
+  "native:ios-build:submit",
+  "native:visionos-build:submit"
+]) {
   if (!packageJson.scripts?.[script]) {
     violations.push(`missing package script: ${script}`);
   }
@@ -56,34 +75,47 @@ for (const provider of ['"apple"', '"google"', '"facebook"']) {
 if (!contracts.includes("ReportSprayRequest") || !contracts.includes("BlockUserRequest")) {
   violations.push("contracts must include UGC report and block primitives");
 }
+for (const contract of ["MacBuildRequest", "MacBuildJob", "MacBuildArtifact", "WorkflowCapability", "AuditLogEntry"]) {
+  if (!contracts.includes(contract)) {
+    violations.push(`contracts missing workflow primitive: ${contract}`);
+  }
+}
 if (!contracts.includes("AnchorProvider") || !contracts.includes("GeoPoint")) {
   violations.push("contracts must model location and anchor data");
 }
 
 const api = readFileSync("services/api/src/index.ts", "utf8");
-if (!api.includes("/auth/dev-login") || !api.includes("claimUsername")) {
-  violations.push("API must expose dev login and unique username flow");
+if (!api.includes("/auth/dev-login") || !api.includes("/auth/provider-login") || !api.includes("/auth/refresh") || !api.includes("claimUsername")) {
+  violations.push("API must expose dev/provider login, refresh, and unique username flow");
 }
-if (!api.includes("/sprays/nearby") || !api.includes("distanceMeters")) {
-  violations.push("API must expose nearby spray discovery");
+if (!api.includes("/sprays/nearby") || !api.includes("/sprays/clusters") || !api.includes("distanceMeters")) {
+  violations.push("API must expose nearby spray discovery and map clusters");
 }
-if (!api.includes("reportSpray") || !api.includes("blockUser")) {
-  violations.push("API must expose moderation report and block flows");
+if (!api.includes("reportSpray") || !api.includes("blockUser") || !api.includes("locationDenylist") || !api.includes("auditLog")) {
+  violations.push("API must expose moderation report, block, denylist, and audit flows");
+}
+if (!api.includes("SPATIAL_SPRAY_DATA_FILE")) {
+  violations.push("API must support configurable persistence path");
 }
 if (/CLIENT_SECRET|APP_SECRET|PRIVATE_KEY/.test(api)) {
   violations.push("API must not embed provider secrets");
+}
+
+const brushEngine = readFileSync("packages/brush-engine/src/index.ts", "utf8");
+if (!brushEngine.includes("createDecalMeshFromStroke") || !brushEngine.includes("distanceAttenuatedRadius")) {
+  violations.push("brush engine must include AR decal mesh and spray distance primitives");
 }
 
 const web = readFileSync("apps/web-simulator/src/main.ts", "utf8");
 if (!web.includes("login-apple") || !web.includes("login-google") || !web.includes("login-facebook")) {
   violations.push("web simulator must expose Apple, Google, and Facebook login choices");
 }
-if (!web.includes("spray-canvas") || !web.includes("publishSpray")) {
-  violations.push("web simulator must include camera spray creation flow");
+if (!web.includes("spray-canvas") || !web.includes("publishSpray") || !web.includes("/sprays/clusters") || !web.includes("adminHideSpray")) {
+  violations.push("web simulator must include camera spray, map clusters, and moderation control flow");
 }
 
 const compliance = readFileSync("docs/compliance.md", "utf8");
-for (const phrase of ["Report a spray piece", "Block a user", "Location Policy", "digital overlays only"]) {
+for (const phrase of ["Report a spray piece", "Block a user", "Location Policy", "digital overlays only", "admin moderation queue"]) {
   if (!compliance.includes(phrase)) {
     violations.push(`compliance doc missing phrase: ${phrase}`);
   }
@@ -93,10 +125,14 @@ const appleReadme = readFileSync("native/apple/README.md", "utf8");
 if (!appleReadme.includes("must not be committed")) {
   violations.push("native Apple README must preserve no-secret boundary");
 }
+const nativeBrush = readFileSync("native/apple/SpatialSpray/Models/SprayBrushModel.swift", "utf8");
+if (!nativeBrush.includes("createDecalMesh") || !nativeBrush.includes("wallAbsorptionOpacity")) {
+  violations.push("native Apple brush model must preserve decal and material primitives");
+}
 
 const workflow = JSON.parse(readFileSync("workflows/spatial-spray.json", "utf8"));
 const phaseIds = new Set(workflow.phases.map((phase) => phase.id));
-for (const id of ["contracts", "api", "web-simulator", "native-ios", "native-visionos", "release-compliance"]) {
+for (const id of ["contracts", "api", "web-simulator", "native-ios", "native-visionos", "mac-builder", "release-compliance", "ci"]) {
   if (!phaseIds.has(id)) {
     violations.push(`workflow missing phase: ${id}`);
   }
@@ -123,4 +159,3 @@ function run(command) {
 function isTextLike(file) {
   return /\.(json|md|mjs|js|ts|tsx|css|html|ya?ml|plist|swift|gitignore)$/.test(file) || file === "README.md";
 }
-

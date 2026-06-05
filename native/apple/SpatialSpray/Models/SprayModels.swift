@@ -84,7 +84,17 @@ struct AuthRequest: Codable {
 
 struct AuthResponse: Codable {
     let token: String
+    let refreshToken: String?
     let user: UserProfile
+}
+
+struct RefreshSessionRequest: Codable {
+    let refreshToken: String
+}
+
+struct RefreshSessionResponse: Codable {
+    let token: String
+    let refreshToken: String
 }
 
 struct ClaimUsernameRequest: Codable {
@@ -99,3 +109,44 @@ struct NearbySpraysResponse: Codable {
     let sprays: [SprayPiece]
 }
 
+struct SprayCluster: Codable, Identifiable {
+    let id: String
+    let center: GeoPoint
+    let count: Int
+    let sampleSprayIds: [String]
+    let distanceMeters: Double
+}
+
+struct SprayClustersResponse: Codable {
+    let clusters: [SprayCluster]
+}
+
+struct CreateSprayPieceRequest: Codable {
+    let title: String
+    let geo: GeoPoint
+    let anchor: AnchorRef
+    let strokes: [SprayStroke]
+    let visibility: String
+    let previewImageUrl: String?
+}
+
+struct CreateSprayPieceResponse: Codable {
+    let spray: SprayPiece
+}
+
+struct ReportSprayRequest: Codable {
+    let reason: String
+    let note: String?
+}
+
+struct ReportSprayResponse: Codable {
+    let moderationStatus: String
+}
+
+struct BlockUserRequest: Codable {
+    let blockedUserId: String
+}
+
+struct BlockUserResponse: Codable {
+    let blockedUserId: String
+}

@@ -6,6 +6,22 @@ export type SprayVisibility = "public" | "unlisted" | "private";
 
 export type ModerationStatus = "visible" | "reported" | "hidden" | "removed";
 
+export type AdminModerationAction = "mark-visible" | "hide" | "remove";
+
+export type SprayReportReason = "illegal" | "hate" | "sexual" | "harassment" | "private-property" | "spam" | "other";
+
+export type MacBuildJobKind = "ios-build" | "visionos-build" | "ios-test" | "visionos-test" | "archive";
+
+export type MacBuildJobStatus = "queued" | "running" | "succeeded" | "failed" | "cancelled";
+
+export type WorkflowCapability =
+  | "linux-runnable"
+  | "mac-builder-required"
+  | "device-required"
+  | "apple-account-required"
+  | "moderation-required"
+  | "mcp-candidate";
+
 export interface GeoPoint {
   latitude: number;
   longitude: number;
@@ -86,7 +102,25 @@ export interface AuthRequest {
 
 export interface AuthResponse {
   token: string;
+  refreshToken?: string;
   user: UserProfile;
+}
+
+export interface ProviderLoginRequest {
+  provider: AuthProvider;
+  idToken?: string;
+  accessToken?: string;
+  authorizationCode?: string;
+  devicePlatform: DevicePlatform;
+}
+
+export interface RefreshSessionRequest {
+  refreshToken: string;
+}
+
+export interface RefreshSessionResponse {
+  token: string;
+  refreshToken: string;
 }
 
 export interface ClaimUsernameRequest {
@@ -115,7 +149,7 @@ export interface NearbySpraysResponse {
 }
 
 export interface ReportSprayRequest {
-  reason: "illegal" | "hate" | "sexual" | "harassment" | "private-property" | "spam" | "other";
+  reason: SprayReportReason;
   note?: string;
 }
 
@@ -129,6 +163,129 @@ export interface BlockUserRequest {
 
 export interface BlockUserResponse {
   blockedUserId: string;
+}
+
+export interface SprayCluster {
+  id: string;
+  center: GeoPoint;
+  count: number;
+  sampleSprayIds: string[];
+  distanceMeters: number;
+}
+
+export interface SprayClustersResponse {
+  clusters: SprayCluster[];
+}
+
+export interface ModerationReport {
+  id: string;
+  sprayId: string;
+  reporterUserId: string;
+  reason: SprayReportReason;
+  note?: string;
+  createdAt: string;
+}
+
+export interface SetModerationStatusRequest {
+  action: AdminModerationAction;
+  note?: string;
+}
+
+export interface SetModerationStatusResponse {
+  spray: SprayPiece;
+}
+
+export interface LocationDenylistEntry {
+  id: string;
+  name: string;
+  center: GeoPoint;
+  radiusMeters: number;
+  reason: string;
+  createdAt: string;
+}
+
+export interface CreateLocationDenylistEntryRequest {
+  name: string;
+  center: GeoPoint;
+  radiusMeters: number;
+  reason: string;
+}
+
+export interface CreateLocationDenylistEntryResponse {
+  entry: LocationDenylistEntry;
+}
+
+export interface AuditLogEntry {
+  id: string;
+  actorUserId?: string;
+  action: string;
+  targetType: "user" | "spray" | "report" | "location" | "auth" | "system";
+  targetId?: string;
+  metadata?: Record<string, string | number | boolean>;
+  createdAt: string;
+}
+
+export interface RepoRef {
+  provider: "github" | "local" | "other";
+  repository: string;
+  remoteUrl: string;
+  branch: string;
+  commitSha: string;
+}
+
+export interface MacBuildTarget {
+  scheme: "SpatialSprayiOS" | "SpatialSprayVision";
+  configuration: "Debug" | "Release";
+  destination: string;
+  sdk: "iphoneos" | "iphonesimulator" | "xros" | "xrsimulator";
+}
+
+export interface MacBuildProject {
+  sourceRoot: string;
+  generator: "xcodegen";
+  generatorSpecPath: string;
+  projectPath: string;
+}
+
+export interface MacBuildArtifact {
+  id: string;
+  type: "build-products" | "xcresult" | "archive" | "ipa" | "log" | "screenshot";
+  name: string;
+  uri: string;
+  createdAt: string;
+  sizeBytes?: number;
+  sha256?: string;
+}
+
+export interface MacBuildJob {
+  id: string;
+  kind: MacBuildJobKind;
+  status: MacBuildJobStatus;
+  logs: { sequence: number; level: "info" | "warn" | "error"; message: string; createdAt: string }[];
+  artifacts: MacBuildArtifact[];
+  createdAt: string;
+  updatedAt: string;
+  failureReason?: string;
+}
+
+export interface MacBuildRequest {
+  kind: MacBuildJobKind;
+  repoRef: RepoRef;
+  project: MacBuildProject;
+  target: MacBuildTarget;
+  capabilities: WorkflowCapability[];
+  reason: string;
+  actorId: string;
+}
+
+export interface MacBuilderCapabilityResponse {
+  available: boolean;
+  mode: "missing" | "mock" | "native";
+  capabilities: string[];
+}
+
+export interface CreateMacBuildJobResponse {
+  job: MacBuildJob;
 }
 
 export function isAuthProvider(value: string): value is AuthProvider {
@@ -178,4 +335,3 @@ export function simpleGeoHash(point: GeoPoint, precision = 5): string {
 function degreesToRadians(value: number): number {
   return (value * Math.PI) / 180;
 }
-

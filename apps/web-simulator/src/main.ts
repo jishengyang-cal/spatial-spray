@@ -1,5 +1,15 @@
 import { createStroke, generateDrips, generateSprayParticles, nozzleProfile, type SprayRenderSettings } from "@spatial-spray/brush-engine";
-import type { AuthProvider, CreateSprayPieceRequest, NearbySpraysResponse, NozzleType, SprayPiece, SprayPoint, UserProfile } from "@spatial-spray/contracts";
+import type {
+  AuthProvider,
+  CreateSprayPieceRequest,
+  NearbySpraysResponse,
+  NozzleType,
+  SprayCluster,
+  SprayClustersResponse,
+  SprayPiece,
+  SprayPoint,
+  UserProfile
+} from "@spatial-spray/contracts";
 import "./styles.css";
 
 const apiBase = import.meta.env.VITE_API_URL ?? "http://127.0.0.1:4301";
@@ -12,6 +22,8 @@ interface State {
   selectedColor: string;
   nozzle: NozzleType;
   nearby: SprayPiece[];
+  clusters: SprayCluster[];
+  selectedSprayId: string | null;
   currentPoints: SprayPoint[];
   strokes: ReturnType<typeof createStroke>[];
   mode: "map" | "camera";
@@ -24,6 +36,8 @@ const state: State = {
   selectedColor: colors[0]!,
   nozzle: "soft-cap",
   nearby: [],
+  clusters: [],
+  selectedSprayId: null,
   currentPoints: [],
   strokes: [],
   mode: "map",
@@ -90,6 +104,7 @@ function renderLeftPanel() {
     <div class="section">
       <h2>Location</h2>
       <div class="muted">lat ${currentLocation.latitude.toFixed(4)}, lng ${currentLocation.longitude.toFixed(4)}</div>
+      <button data-action="refresh-nearby">Refresh nearby</button>
     </div>
   `;
 }
@@ -126,15 +141,22 @@ function renderUserPanel() {
 }
 
 function renderMap() {
+  const clusters = state.clusters
+    .map((cluster, index) => {
+      const left = 50 + Math.sin(index * 1.7) * Math.min(42, 8 + cluster.distanceMeters / 18);
+      const top = 50 + Math.cos(index * 1.4) * Math.min(38, 8 + cluster.distanceMeters / 20);
+      return `<button class="cluster-pin" style="left:${left}%;top:${top}%;" title="${cluster.count} sprays nearby">${cluster.count}</button>`;
+    })
+    .join("");
   const pins = state.nearby
     .map((spray, index) => {
       const left = 50 + Math.sin(index * 2.2) * Math.min(38, 10 + (spray.distanceMeters ?? 80) / 12);
       const top = 50 + Math.cos(index * 1.8) * Math.min(35, 9 + (spray.distanceMeters ?? 80) / 14);
-      return `<div class="spray-pin" title="${spray.title}" style="left:${left}%;top:${top}%;background:${spray.strokes[0]?.color ?? "#f97316"}"></div>`;
+      return `<button class="spray-pin ${state.selectedSprayId === spray.id ? "active" : ""}" data-select="${spray.id}" title="${spray.title}" style="left:${left}%;top:${top}%;background:${spray.strokes[0]?.color ?? "#f97316"}"></button>`;
     })
     .join("");
 
-  return `<div class="map" data-testid="map"><div class="location-dot"></div>${pins}</div>`;
+  return `<div class="map" data-testid="map"><div class="location-dot"></div>${clusters}${pins}</div>`;
 }
 
 function renderCamera() {
@@ -162,6 +184,7 @@ function renderRightPanel() {
         ${state.nearby.map(renderSprayCard).join("") || `<div class="muted">No public spray nearby</div>`}
       </div>
     </div>
+    ${renderSelectedSpray()}
     <div class="status" data-testid="status">${state.status}</div>
   `;
 }
@@ -171,7 +194,32 @@ function renderSprayCard(spray: SprayPiece) {
     <div class="spray-card">
       <div class="spray-title">${escapeHtml(spray.title)}</div>
       <div class="muted">@${spray.username} · ${spray.distanceMeters ?? 0}m · ${spray.moderationStatus}</div>
+      <button data-select="${spray.id}">Details</button>
       <button class="danger" data-report="${spray.id}">Report</button>
+    </div>
+  `;
+}
+
+function renderSelectedSpray() {
+  const spray = state.nearby.find((entry) => entry.id === state.selectedSprayId);
+  if (!spray) {
+    return "";
+  }
+
+  const ownSpray = state.user?.id === spray.ownerUserId;
+  return `
+    <div class="section">
+      <h2>Selected</h2>
+      <div class="spray-card" data-testid="selected-spray">
+        <div class="spray-title">${escapeHtml(spray.title)}</div>
+        <div class="muted">@${spray.username} · ${spray.distanceMeters ?? 0}m</div>
+        <div class="muted">anchor: ${spray.anchor.provider} · strokes: ${spray.strokes.length}</div>
+        <div class="stack">
+          <button data-block="${spray.ownerUserId}">Block artist</button>
+          ${ownSpray ? `<button class="danger" data-delete="${spray.id}">Delete my spray</button>` : ""}
+          <button class="danger" data-admin-hide="${spray.id}">Admin hide</button>
+        </div>
+      </div>
     </div>
   `;
 }
@@ -195,6 +243,7 @@ function bindEvents() {
     state.mode = "camera";
     render();
   });
+  document.querySelector<HTMLButtonElement>("[data-action='refresh-nearby']")?.addEventListener("click", () => void refreshNearby());
   document.querySelector<HTMLButtonElement>("[data-action='sign-out']")?.addEventListener("click", () => {
     state.token = null;
     state.user = null;
@@ -219,6 +268,21 @@ function bindEvents() {
   });
   document.querySelectorAll<HTMLButtonElement>("[data-report]").forEach((button) => {
     button.addEventListener("click", () => void reportSpray(button.dataset.report ?? ""));
+  });
+  document.querySelectorAll<HTMLButtonElement>("[data-select]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.selectedSprayId = button.dataset.select ?? null;
+      render();
+    });
+  });
+  document.querySelectorAll<HTMLButtonElement>("[data-delete]").forEach((button) => {
+    button.addEventListener("click", () => void deleteSpray(button.dataset.delete ?? ""));
+  });
+  document.querySelectorAll<HTMLButtonElement>("[data-block]").forEach((button) => {
+    button.addEventListener("click", () => void blockArtist(button.dataset.block ?? ""));
+  });
+  document.querySelectorAll<HTMLButtonElement>("[data-admin-hide]").forEach((button) => {
+    button.addEventListener("click", () => void adminHideSpray(button.dataset.adminHide ?? ""));
   });
 }
 
@@ -339,6 +403,14 @@ async function claimUsername(username: string) {
 async function loadNearby() {
   const response = await api<NearbySpraysResponse>(`/sprays/nearby?lat=${currentLocation.latitude}&lng=${currentLocation.longitude}&radiusMeters=1200`);
   state.nearby = response.sprays;
+  const clusters = await api<SprayClustersResponse>(`/sprays/clusters?lat=${currentLocation.latitude}&lng=${currentLocation.longitude}&radiusMeters=1200&cellMeters=180`);
+  state.clusters = clusters.clusters;
+}
+
+async function refreshNearby() {
+  await loadNearby();
+  state.status = "Nearby map refreshed";
+  render();
 }
 
 async function publishSpray() {
@@ -376,6 +448,7 @@ async function publishSpray() {
   state.strokes = [];
   state.status = "Spray published nearby";
   await loadNearby();
+  state.selectedSprayId = state.nearby[0]?.id ?? null;
   state.mode = "map";
   render();
 }
@@ -387,10 +460,39 @@ async function reportSpray(id: string) {
   render();
 }
 
-async function api<T>(path: string, options: { method?: string; body?: unknown } = {}): Promise<T> {
+async function deleteSpray(id: string) {
+  await api(`/sprays/${id}`, { method: "DELETE" });
+  state.selectedSprayId = null;
+  state.status = "Spray removed";
+  await loadNearby();
+  render();
+}
+
+async function blockArtist(blockedUserId: string) {
+  await api("/blocks", { method: "POST", body: { blockedUserId } });
+  state.selectedSprayId = null;
+  state.status = "Artist blocked";
+  await loadNearby();
+  render();
+}
+
+async function adminHideSpray(id: string) {
+  await api(`/moderation/sprays/${id}/status`, {
+    method: "POST",
+    body: { action: "hide", note: "web simulator admin hide" },
+    admin: true
+  });
+  state.selectedSprayId = null;
+  state.status = "Admin hide applied";
+  await loadNearby();
+  render();
+}
+
+async function api<T>(path: string, options: { method?: string; body?: unknown; admin?: boolean } = {}): Promise<T> {
   const headers: Record<string, string> = {};
   if (options.body) headers["content-type"] = "application/json";
   if (state.token) headers.authorization = `Bearer ${state.token}`;
+  if (options.admin) headers["x-admin-token"] = "local-admin";
   const response = await fetch(`${apiBase}${path}`, {
     method: options.method ?? "GET",
     headers,

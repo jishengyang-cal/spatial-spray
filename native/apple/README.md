@@ -38,3 +38,13 @@ The first implementation keeps provider login behind service adapters. Real
 Apple, Google, and Facebook SDK configuration must be provided on the Mac
 Builder through signed app configuration and must not be committed.
 
+The Linux repo scripts submit native work through the Mac Builder adapter:
+
+```bash
+pnpm native:mac-builder:check
+pnpm native:ios-build:submit
+pnpm native:visionos-build:submit
+```
+
+Use `pnpm native:mac-builder:mock` to validate job submission and polling
+without Xcode.

@@ -16,6 +16,20 @@ export interface SprayRenderSettings {
   drip: number;
 }
 
+export interface DecalVertex {
+  position: [number, number, number];
+  uv: [number, number];
+  alpha: number;
+}
+
+export interface DecalMesh {
+  vertices: DecalVertex[];
+  indices: number[];
+  color: string;
+  roughness: number;
+  metallic: number;
+}
+
 export function createStroke(
   id: string,
   color: string,
@@ -96,6 +110,56 @@ export function generateDrips(x: number, y: number, settings: SprayRenderSetting
   return drips;
 }
 
+export function distanceAttenuatedRadius(baseRadius: number, sprayDistanceMeters: number): number {
+  const clamped = Math.max(0.12, Math.min(1.2, sprayDistanceMeters));
+  return baseRadius * (0.65 + clamped * 0.55);
+}
+
+export function wallAbsorptionOpacity(opacity: number, wallRoughness: number): number {
+  const roughness = Math.max(0, Math.min(1, wallRoughness));
+  return opacity * (0.72 + roughness * 0.28);
+}
+
+export function createDecalMeshFromStroke(
+  stroke: SprayStroke,
+  surfaceOrigin: [number, number, number],
+  surfaceRight: [number, number, number],
+  surfaceUp: [number, number, number],
+  options: { widthMeters: number; heightMeters: number; wallRoughness?: number; sprayDistanceMeters?: number }
+): DecalMesh {
+  const vertices: DecalVertex[] = [];
+  const indices: number[] = [];
+  const wallOpacity = wallAbsorptionOpacity(stroke.opacity, options.wallRoughness ?? 0.55);
+  const radius = distanceAttenuatedRadius(stroke.radiusMeters, options.sprayDistanceMeters ?? 0.45);
+
+  for (const point of stroke.points) {
+    const center = add3(
+      surfaceOrigin,
+      add3(scale3(surfaceRight, (point.x - 0.5) * options.widthMeters), scale3(surfaceUp, (0.5 - point.y) * options.heightMeters))
+    );
+    const right = scale3(surfaceRight, radius);
+    const up = scale3(surfaceUp, radius);
+    const base = vertices.length;
+    const alpha = Math.max(0.05, Math.min(1, point.pressure * wallOpacity));
+
+    vertices.push(
+      { position: sub3(sub3(center, right), up), uv: [0, 1], alpha },
+      { position: add3(sub3(center, up), right), uv: [1, 1], alpha },
+      { position: add3(add3(center, right), up), uv: [1, 0], alpha },
+      { position: add3(sub3(center, right), up), uv: [0, 0], alpha }
+    );
+    indices.push(base, base + 1, base + 2, base, base + 2, base + 3);
+  }
+
+  return {
+    vertices,
+    indices,
+    color: stroke.color,
+    roughness: 0.86,
+    metallic: 0
+  };
+}
+
 function lcg(value: number): number {
   return (value * 1664525 + 1013904223) >>> 0;
 }
@@ -104,3 +168,14 @@ function rand(value: number): number {
   return value / 0xffffffff;
 }
 
+function add3(a: [number, number, number], b: [number, number, number]): [number, number, number] {
+  return [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+}
+
+function sub3(a: [number, number, number], b: [number, number, number]): [number, number, number] {
+  return [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+}
+
+function scale3(value: [number, number, number], scalar: number): [number, number, number] {
+  return [value[0] * scalar, value[1] * scalar, value[2] * scalar];
+}

@@ -11,7 +11,9 @@ does not modify real buildings or property.
   immersive viewing.
 - Web simulator: Linux-runnable product loop for contracts, API, map behavior,
   and spray brush prototyping.
-- Admin console: future moderation and location policy control plane.
+- Admin console: moderation and location policy control plane.
+- Mac Builder adapter: remote build/test/archive control plane for native
+  Apple work.
 
 ## Planes
 
@@ -32,11 +34,20 @@ API plane
 Data plane
   User profiles
   Provider identities
+  Sessions and refresh tokens
   Spray pieces
   Anchor payloads
   Reports
   Block lists
+  Location denylists
+  Audit events
   Media previews
+
+Workflow plane
+  Linux CI
+  Mac Builder mock
+  Remote Mac Builder
+  Artifact/log refs
 ```
 
 ## Identity
@@ -98,20 +109,28 @@ placement until device tests prove it.
 ## Moderation
 
 The system includes report and block primitives from the first version.
-Production must add:
+The current service also includes owner delete, admin hide/remove,
+location denylist, and audit log primitives. Production must add:
 
 - content review queue
 - user suspension
-- location exclusion zones
 - owner/takedown request workflow
 - media scanning for preview images
 - policy audit log
 
+## Native Build Boundary
+
+The repo contains iOS and visionOS source, but native build execution is an
+adapter call. The Linux workflow can submit a `MacBuildRequest` and poll a
+`MacBuildJob`; the real worker must run XcodeGen, xcodebuild, simulator tests,
+archives, signing, and artifact collection on macOS.
+
 ## Current Implementation
 
 - `packages/contracts`: shared data contracts and validation helpers.
-- `packages/brush-engine`: spray particle and drip generation.
-- `services/api`: in-memory MVP API.
-- `apps/web-simulator`: product simulator.
-- `native/apple`: iOS and visionOS source handoff.
-
+- `packages/brush-engine`: spray particle, drip, material, and decal mesh generation.
+- `services/api`: persistent local API with auth sessions, nearby discovery,
+  clusters, UGC moderation, location denylist, and audit log.
+- `apps/web-simulator`: product simulator with map, camera, and admin flows.
+- `native/apple`: iOS AR and visionOS mixed immersive source scaffold.
+- `scripts/mac-builder-*.mjs`: remote Mac Builder client and local mock.

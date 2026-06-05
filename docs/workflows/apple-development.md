@@ -16,6 +16,24 @@ pnpm workflow:check
 
 ## Mac Builder Loop
 
+Linux submits jobs through the adapter:
+
+```bash
+pnpm native:mac-builder:check
+pnpm native:ios-build:submit
+pnpm native:visionos-build:submit
+```
+
+Without `SPATIAL_SPRAY_MAC_BUILDER_URL`, the check reports missing capability
+and exits without failing CI. For local protocol testing:
+
+```bash
+pnpm native:mac-builder:mock
+SPATIAL_SPRAY_MAC_BUILDER_URL=http://127.0.0.1:4391 pnpm native:ios-build:submit
+```
+
+The real Mac worker runs the native commands:
+
 ```bash
 xcodegen generate --spec native/apple/project.yml
 
@@ -44,6 +62,9 @@ xcodebuild \
 5. Upload spray metadata, strokes, preview, location, and anchor payload.
 6. Reopen the same piece through nearby lookup and AR anchor resolution.
 
+Current source includes an ARKit/RealityKit gesture surface that raycasts from
+touches, renders paint dots, and publishes stroke data to the API.
+
 ## Vision Pro Work
 
 1. Use SwiftUI window surfaces for login, map/list, and moderation actions.
@@ -53,6 +74,9 @@ xcodebuild \
 4. Use attachments only for UI panels; spray art should be native RealityKit
    content attached to surfaces.
 5. Validate all placement, scale, comfort, and performance on Apple Vision Pro.
+
+Current source includes a mixed immersive RealityKit scene with a spray preview
+wall and nearby spray panel. Real spatial persistence still needs device tests.
 
 ## Authentication Work
 
@@ -72,5 +96,5 @@ Before TestFlight:
 - Privacy labels include location, camera, account identifiers, and UGC.
 - Report and block flows are present.
 - Moderation backend can hide/remove public pieces.
+- Location denylist and audit log are operational.
 - App copy states that spray paint is digital AR content only.
-

@@ -12,8 +12,10 @@ requirements, not late-stage patches.
 - View why location and camera permissions are needed.
 - Avoid revealing exact live location of other users.
 
-The MVP implements reporting and blocking API primitives. Deletion, admin
-review, and location exclusion zones are next-stage requirements.
+The MVP implements reporting, blocking, owner deletion, admin hide/remove,
+location denylist, and moderation audit primitives. A production release still
+needs an operated admin moderation queue, escalation rules, and support
+workflow.
 
 ## Location Policy
 
@@ -36,6 +38,9 @@ Public spray pieces are UGC. Production must include:
 - report flow
 - block flow
 - admin moderation queue
+- owner delete flow
+- location denylist
+- moderation audit log
 - abuse detection
 - removed/hidden status
 - repeat-offender user enforcement
@@ -65,4 +70,3 @@ avoid suggesting permission to vandalize or modify real property.
   https://developer.apple.com/documentation/xcode/running-your-app-in-simulator-or-on-a-device
 - ARKit:
   https://developer.apple.com/augmented-reality/arkit/
-

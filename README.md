@@ -35,10 +35,22 @@ web simulator: http://127.0.0.1:5177
 - Dev-mode provider login adapters for Apple, Google, and Facebook.
 - Unique username reservation.
 - Location-indexed spray piece creation and nearby lookup.
-- Spray stroke model with colors, nozzle, particles, overspray, and drip data.
-- UGC moderation primitives: report, block user, hide blocked creators.
-- Web simulator for login, username, map discovery, and camera spray canvas.
-- Native Apple source scaffold for iOS and visionOS handoff.
+- Persistent local API state with refresh sessions and provider-login boundary.
+- Spray stroke model with colors, nozzle, particles, overspray, drips, and AR decal mesh data.
+- UGC moderation primitives: report, block user, owner delete, admin hide/remove, audit log, and location denylist.
+- Web simulator for login, username, map discovery, clusters, camera spray canvas, and moderation actions.
+- Native Apple source scaffold for iPhone AR spray and Vision Pro mixed immersive viewing.
+- Mac Builder adapter scripts with local mock worker for native build job submission.
 
 See `docs/architecture.md`, `docs/compliance.md`, and
 `docs/workflows/apple-development.md`.
+
+## Mac Builder Boundary
+
+```bash
+pnpm native:mac-builder:mock
+SPATIAL_SPRAY_MAC_BUILDER_URL=http://127.0.0.1:4391 pnpm native:visionos-build:submit
+```
+
+The mock validates the request/response workflow. Real iOS and visionOS builds
+still require a remote Mac with Xcode and signing material.

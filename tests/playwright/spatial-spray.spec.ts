@@ -28,3 +28,38 @@ test("user can sign in, claim username, create spray, and see it nearby", async 
   await expect(page.getByTestId("map")).toBeVisible();
 });
 
+test("user can save a private spray and switch it to public", async ({ page }) => {
+  await page.goto("/");
+
+  const username = `private_artist_${Date.now().toString().slice(-6)}`;
+  await page.getByTestId("login-google").click();
+  await page.getByTestId("username-input").fill(username);
+  await page.getByTestId("claim-username").click();
+  await expect(page.getByTestId("active-user")).toContainText(username);
+
+  await page.getByTestId("visibility-select").selectOption("private");
+  await page.getByTestId("camera-mode").click();
+  const canvas = page.getByTestId("spray-canvas");
+  const box = await canvas.boundingBox();
+  expect(box).not.toBeNull();
+
+  const startX = box!.x + box!.width * 0.4;
+  const startY = box!.y + box!.height * 0.5;
+  await page.mouse.move(startX, startY);
+  await page.mouse.down();
+  await page.mouse.move(startX + 80, startY + 12, { steps: 8 });
+  await page.mouse.up();
+
+  await page.getByTestId("publish-spray").click();
+  await expect(page.getByTestId("status")).toContainText("Private spray saved for you");
+  await expect(page.getByTestId("nearby-list")).toContainText("Only me");
+  await expect(page.getByTestId("nearby-list")).toContainText(`Spray by @${username}`);
+
+  const privateCard = page.locator(".spray-card").filter({ hasText: `Spray by @${username}` }).first();
+  await privateCard.getByRole("button", { name: "Details" }).click();
+  await expect(page.getByTestId("selected-spray")).toContainText("Only me");
+
+  await page.getByTestId("toggle-visibility").click();
+  await expect(page.getByTestId("status")).toContainText("Spray is visible to everyone");
+  await expect(page.getByTestId("nearby-list")).toContainText("Everyone");
+});

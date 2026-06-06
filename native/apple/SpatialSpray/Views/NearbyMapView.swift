@@ -27,7 +27,7 @@ struct NearbyMapView: View {
             List(session.nearbySprays) { spray in
                 VStack(alignment: .leading) {
                     Text(spray.title)
-                    Text("@\(spray.username) · \(Int(spray.distanceMeters ?? 0))m")
+                    Text("\(visibilityLabel(spray.visibility)) · @\(spray.username) · \(Int(spray.distanceMeters ?? 0))m")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -41,6 +41,9 @@ struct NearbyMapView: View {
                 }
                 .swipeActions(edge: .leading) {
                     if spray.ownerUserId == session.user?.id {
+                        Button(spray.visibility == "public" ? "Hide" : "Show") {
+                            session.setVisibility(spray, visibility: spray.visibility == "public" ? "private" : "public")
+                        }
                         Button("Delete", role: .destructive) {
                             session.delete(spray)
                         }
@@ -62,6 +65,19 @@ struct NearbyMapView: View {
         }
         .onAppear {
             session.loadNearby(latitude: coordinate.latitude, longitude: coordinate.longitude)
+        }
+    }
+
+    private func visibilityLabel(_ visibility: String) -> String {
+        switch visibility {
+        case "public":
+            return "Everyone"
+        case "private":
+            return "Only me"
+        case "unlisted":
+            return "Unlisted"
+        default:
+            return visibility
         }
     }
 }

@@ -48,6 +48,10 @@ final class SprayAPIClient {
         try await post("/sprays", body: request, token: token)
     }
 
+    func setSprayVisibility(id: String, visibility: String, token: String) async throws -> SetSprayVisibilityResponse {
+        try await post("/sprays/\(id)/visibility", body: SetSprayVisibilityRequest(visibility: visibility), token: token)
+    }
+
     func reportSpray(id: String, token: String) async throws -> ReportSprayResponse {
         try await post("/sprays/\(id)/reports", body: ReportSprayRequest(reason: "other", note: "native report"), token: token)
     }
@@ -169,7 +173,7 @@ final class SpraySessionStore: ObservableObject {
         }
     }
 
-    func publishSpray(title: String, geo: GeoPoint, anchor: AnchorRef, strokes: [SprayStroke]) {
+    func publishSpray(title: String, geo: GeoPoint, anchor: AnchorRef, strokes: [SprayStroke], visibility: String = "public") {
         guard let token else { return }
         Task {
             do {
@@ -178,7 +182,7 @@ final class SpraySessionStore: ObservableObject {
                     geo: geo,
                     anchor: anchor,
                     strokes: strokes,
-                    visibility: "public",
+                    visibility: visibility,
                     previewImageUrl: nil
                 )
                 _ = try await client.createSpray(request, token: token)
@@ -186,6 +190,22 @@ final class SpraySessionStore: ObservableObject {
                 errorMessage = nil
             } catch {
                 errorMessage = "Spray publish failed"
+            }
+        }
+    }
+
+    func setVisibility(_ spray: SprayPiece, visibility: String) {
+        guard let token else { return }
+        Task {
+            do {
+                let response = try await client.setSprayVisibility(id: spray.id, visibility: visibility, token: token)
+                if let index = nearbySprays.firstIndex(where: { $0.id == spray.id }) {
+                    nearbySprays[index] = response.spray
+                }
+                loadNearby(latitude: spray.geo.latitude, longitude: spray.geo.longitude)
+                errorMessage = nil
+            } catch {
+                errorMessage = "Visibility update failed"
             }
         }
     }

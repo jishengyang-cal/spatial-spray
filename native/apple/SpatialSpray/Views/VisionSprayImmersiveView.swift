@@ -29,7 +29,7 @@ struct VisionSprayImmersiveView: View {
                     ForEach(session.nearbySprays.prefix(6)) { spray in
                         VStack(alignment: .leading, spacing: 4) {
                             Text(spray.title)
-                            Text("@\(spray.username) · \(Int(spray.distanceMeters ?? 0))m")
+                            Text("\(visibilityLabel(spray.visibility)) · @\(spray.username) · \(Int(spray.distanceMeters ?? 0))m")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
@@ -77,6 +77,19 @@ struct VisionSprayImmersiveView: View {
                 SprayPoint(x: 0.62, y: 0.35, z: 0, pressure: 0.6, timestampMs: 0)
             ])
         ]
+    }
+
+    private func visibilityLabel(_ visibility: String) -> String {
+        switch visibility {
+        case "public":
+            return "Everyone"
+        case "private":
+            return "Only me"
+        case "unlisted":
+            return "Unlisted"
+        default:
+            return visibility
+        }
     }
 }
 

@@ -45,6 +45,13 @@ select {
   padding: 9px 10px;
 }
 
+.field {
+  display: grid;
+  gap: 6px;
+  color: #9fb2c3;
+  font-size: 13px;
+}
+
 .shell {
   min-height: 100vh;
   display: grid;
@@ -202,6 +209,38 @@ select {
 .spray-title {
   font-weight: 700;
   margin-bottom: 4px;
+}
+
+.meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 8px;
+}
+
+.visibility-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  border: 1px solid #40505d;
+  border-radius: 999px;
+  padding: 2px 8px;
+  color: #d9e3ea;
+  background: #1a242d;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.visibility-badge.public {
+  border-color: #2d6cdf;
+  background: rgba(45, 108, 223, 0.2);
+}
+
+.visibility-badge.private,
+.visibility-badge.unlisted {
+  border-color: #7c4d12;
+  background: rgba(245, 158, 11, 0.14);
 }
 
 .muted {

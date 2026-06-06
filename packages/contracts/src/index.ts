@@ -144,6 +144,14 @@ export interface CreateSprayPieceResponse {
   spray: SprayPiece;
 }
 
+export interface SetSprayVisibilityRequest {
+  visibility: SprayVisibility;
+}
+
+export interface SetSprayVisibilityResponse {
+  spray: SprayPiece;
+}
+
 export interface NearbySpraysResponse {
   sprays: SprayPiece[];
 }
@@ -290,6 +298,10 @@ export interface CreateMacBuildJobResponse {
 
 export function isAuthProvider(value: string): value is AuthProvider {
   return value === "apple" || value === "google" || value === "facebook";
+}
+
+export function isSprayVisibility(value: string): value is SprayVisibility {
+  return value === "public" || value === "unlisted" || value === "private";
 }
 
 export function normalizeUsername(value: string): string {

@@ -46,6 +46,8 @@ try {
 
   const duplicate = await postRaw("/users/username", { username: "api_artist" }, duplicateLogin.token);
   assert.equal(duplicate.status, 409);
+  const viewerClaimed = await post("/users/username", { username: "api_viewer" }, duplicateLogin.token);
+  assert.equal(viewerClaimed.user.username, "api_viewer");
 
   const sprayPayload = {
     title: "API wall piece",
@@ -79,13 +81,48 @@ try {
   assert.equal(created.spray.title, "API wall piece");
   assert.equal(created.spray.username, "api_artist");
 
+  const privateCreated = await post("/sprays", { ...sprayPayload, title: "Private office piece", visibility: "private" }, activeToken);
+  assert.equal(privateCreated.spray.visibility, "private");
+
+  const invalidVisibility = await postRaw("/sprays", { ...sprayPayload, title: "Invalid visibility piece", visibility: "friends" }, activeToken);
+  assert.equal(invalidVisibility.status, 400);
+
   const nearby = await get("/sprays/nearby?lat=37.7749&lng=-122.4194&radiusMeters=500", activeToken);
   assert.ok(nearby.sprays.some((spray) => spray.id === created.spray.id));
+  assert.ok(nearby.sprays.some((spray) => spray.id === privateCreated.spray.id));
   assert.equal(typeof nearby.sprays.find((spray) => spray.id === created.spray.id).distanceMeters, "number");
+
+  const anonymousNearby = await get("/sprays/nearby?lat=37.7749&lng=-122.4194&radiusMeters=500");
+  assert.ok(anonymousNearby.sprays.some((spray) => spray.id === created.spray.id));
+  assert.ok(!anonymousNearby.sprays.some((spray) => spray.id === privateCreated.spray.id));
+
+  const otherNearbyBeforePublic = await get("/sprays/nearby?lat=37.7749&lng=-122.4194&radiusMeters=500", duplicateLogin.token);
+  assert.ok(otherNearbyBeforePublic.sprays.some((spray) => spray.id === created.spray.id));
+  assert.ok(!otherNearbyBeforePublic.sprays.some((spray) => spray.id === privateCreated.spray.id));
+
+  const ownerDirectPrivate = await get(`/sprays/${privateCreated.spray.id}`, activeToken);
+  assert.equal(ownerDirectPrivate.spray.id, privateCreated.spray.id);
+  const anonymousDirectPrivate = await getRaw(`/sprays/${privateCreated.spray.id}`);
+  assert.equal(anonymousDirectPrivate.status, 404);
+  const otherDirectPrivate = await getRaw(`/sprays/${privateCreated.spray.id}`, duplicateLogin.token);
+  assert.equal(otherDirectPrivate.status, 404);
 
   const clusters = await get("/sprays/clusters?lat=37.7749&lng=-122.4194&radiusMeters=500&cellMeters=150", activeToken);
   assert.ok(clusters.clusters.length >= 1);
   assert.ok(clusters.clusters.some((cluster) => cluster.sampleSprayIds.includes(created.spray.id)));
+  assert.ok(clusters.clusters.some((cluster) => cluster.sampleSprayIds.includes(privateCreated.spray.id)));
+
+  const otherClustersBeforePublic = await get("/sprays/clusters?lat=37.7749&lng=-122.4194&radiusMeters=500&cellMeters=150", duplicateLogin.token);
+  assert.ok(!otherClustersBeforePublic.clusters.some((cluster) => cluster.sampleSprayIds.includes(privateCreated.spray.id)));
+
+  const unauthorizedVisibility = await postRaw(`/sprays/${privateCreated.spray.id}/visibility`, { visibility: "public" }, duplicateLogin.token);
+  assert.equal(unauthorizedVisibility.status, 403);
+
+  const publicized = await post(`/sprays/${privateCreated.spray.id}/visibility`, { visibility: "public" }, activeToken);
+  assert.equal(publicized.spray.visibility, "public");
+
+  const otherNearbyAfterPublic = await get("/sprays/nearby?lat=37.7749&lng=-122.4194&radiusMeters=500", duplicateLogin.token);
+  assert.ok(otherNearbyAfterPublic.sprays.some((spray) => spray.id === privateCreated.spray.id));
 
   const report = await post(`/sprays/${created.spray.id}/reports`, { reason: "other", note: "test report" }, duplicateLogin.token);
   assert.equal(report.moderationStatus, "reported");
@@ -153,13 +190,17 @@ async function waitForHealth() {
 }
 
 async function get(path, token, extraHeaders = {}) {
-  const response = await fetch(`${baseUrl}${path}`, {
-    headers: { ...(token ? { authorization: `Bearer ${token}` } : {}), ...extraHeaders }
-  });
+  const response = await getRaw(path, token, extraHeaders);
   if (!response.ok) {
     assert.fail(await response.text());
   }
   return response.json();
+}
+
+async function getRaw(path, token, extraHeaders = {}) {
+  return fetch(`${baseUrl}${path}`, {
+    headers: { ...(token ? { authorization: `Bearer ${token}` } : {}), ...extraHeaders }
+  });
 }
 
 async function post(path, body, token, extraHeaders = {}) {

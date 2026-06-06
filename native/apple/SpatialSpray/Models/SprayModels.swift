@@ -134,6 +134,14 @@ struct CreateSprayPieceResponse: Codable {
     let spray: SprayPiece
 }
 
+struct SetSprayVisibilityRequest: Codable {
+    let visibility: String
+}
+
+struct SetSprayVisibilityResponse: Codable {
+    let spray: SprayPiece
+}
+
 struct ReportSprayRequest: Codable {
     let reason: String
     let note: String?

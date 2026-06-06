@@ -72,8 +72,11 @@ for (const provider of ['"apple"', '"google"', '"facebook"']) {
     violations.push(`auth provider missing from contracts: ${provider}`);
   }
 }
-if (!contracts.includes("ReportSprayRequest") || !contracts.includes("BlockUserRequest")) {
+if (!contracts.includes("ReportSprayRequest") || !contracts.includes("BlockUserRequest") || !contracts.includes("SetSprayVisibilityRequest")) {
   violations.push("contracts must include UGC report and block primitives");
+}
+if (!contracts.includes("SprayVisibility") || !contracts.includes("isSprayVisibility")) {
+  violations.push("contracts must model public/private spray visibility");
 }
 for (const contract of ["MacBuildRequest", "MacBuildJob", "MacBuildArtifact", "WorkflowCapability", "AuditLogEntry"]) {
   if (!contracts.includes(contract)) {
@@ -94,6 +97,9 @@ if (!api.includes("/sprays/nearby") || !api.includes("/sprays/clusters") || !api
 if (!api.includes("reportSpray") || !api.includes("blockUser") || !api.includes("locationDenylist") || !api.includes("auditLog")) {
   violations.push("API must expose moderation report, block, denylist, and audit flows");
 }
+if (!api.includes("/visibility") || !api.includes("setSprayVisibility") || !api.includes("canDiscoverSpray")) {
+  violations.push("API must enforce owner-controlled spray visibility in discovery and detail flows");
+}
 if (!api.includes("SPATIAL_SPRAY_DATA_FILE")) {
   violations.push("API must support configurable persistence path");
 }
@@ -113,9 +119,12 @@ if (!web.includes("login-apple") || !web.includes("login-google") || !web.includ
 if (!web.includes("spray-canvas") || !web.includes("publishSpray") || !web.includes("/sprays/clusters") || !web.includes("adminHideSpray")) {
   violations.push("web simulator must include camera spray, map clusters, and moderation control flow");
 }
+if (!web.includes("visibility-select") || !web.includes("setSprayVisibility")) {
+  violations.push("web simulator must expose public/private spray visibility controls");
+}
 
 const compliance = readFileSync("docs/compliance.md", "utf8");
-for (const phrase of ["Report a spray piece", "Block a user", "Location Policy", "digital overlays only", "admin moderation queue"]) {
+for (const phrase of ["Report a spray piece", "Block a user", "Choose whether a spray piece is public or visible only to its owner", "Location Policy", "digital overlays only", "admin moderation queue"]) {
   if (!compliance.includes(phrase)) {
     violations.push(`compliance doc missing phrase: ${phrase}`);
   }

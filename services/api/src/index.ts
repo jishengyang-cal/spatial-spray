@@ -6,6 +6,7 @@ import {
   assertGeoPoint,
   distanceMeters,
   isAuthProvider,
+  isSprayVisibility,
   normalizeUsername,
   simpleGeoHash,
   validateUsername,
@@ -32,10 +33,13 @@ import {
   type ReportSprayResponse,
   type SetModerationStatusRequest,
   type SetModerationStatusResponse,
+  type SetSprayVisibilityRequest,
+  type SetSprayVisibilityResponse,
   type SprayCluster,
   type SprayClustersResponse,
   type SprayPiece,
   type SprayReportReason,
+  type SprayVisibility,
   type UserProfile
 } from "@spatial-spray/contracts";
 
@@ -174,9 +178,18 @@ async function route(request: IncomingMessage, response: ServerResponse) {
     return;
   }
 
+  const sprayVisibilityMatch = /^\/sprays\/([^/]+)\/visibility$/.exec(url.pathname);
+  if (sprayVisibilityMatch && request.method === "POST") {
+    const user = requireUser(request);
+    const body = await readJson<SetSprayVisibilityRequest>(request);
+    const payload: SetSprayVisibilityResponse = setSprayVisibility(user, sprayVisibilityMatch[1] ?? "", body);
+    sendJson(response, 200, payload);
+    return;
+  }
+
   const sprayMatch = /^\/sprays\/([^/]+)$/.exec(url.pathname);
   if (sprayMatch && request.method === "GET") {
-    const spray = findVisibleSpray(sprayMatch[1] ?? "");
+    const spray = findVisibleSpray(sprayMatch[1] ?? "", optionalUser(request));
     sendJson(response, 200, { spray });
     return;
   }
@@ -372,6 +385,7 @@ function createSpray(user: UserProfile, request: CreateSprayPieceRequest): Spray
   if (!request.anchor?.provider || !request.anchor.surfacePose) {
     throw new HttpError(400, "Anchor provider and surface pose are required.");
   }
+  const visibility = assertSprayVisibility(request.visibility);
 
   const now = new Date().toISOString();
   const spray: SprayPiece = {
@@ -383,7 +397,7 @@ function createSpray(user: UserProfile, request: CreateSprayPieceRequest): Spray
     geohash: simpleGeoHash(request.geo),
     anchor: request.anchor,
     strokes: request.strokes,
-    visibility: request.visibility,
+    visibility,
     moderationStatus: "visible",
     previewImageUrl: request.previewImageUrl,
     createdAt: now,
@@ -398,8 +412,7 @@ function createSpray(user: UserProfile, request: CreateSprayPieceRequest): Spray
 function nearbySprays(center: { latitude: number; longitude: number }, radiusMeters: number, user?: UserProfile): SprayPiece[] {
   const blocked = user ? new Set(state.blocks.filter((block) => block.userId === user.id).map((block) => block.blockedUserId)) : new Set<string>();
   return state.sprays
-    .filter((spray) => spray.visibility === "public")
-    .filter((spray) => spray.moderationStatus === "visible" || spray.moderationStatus === "reported")
+    .filter((spray) => canDiscoverSpray(spray, user))
     .filter((spray) => !blocked.has(spray.ownerUserId))
     .map((spray) => ({ ...spray, distanceMeters: Math.round(distanceMeters(center, spray.geo)) }))
     .filter((spray) => (spray.distanceMeters ?? Number.POSITIVE_INFINITY) <= radiusMeters)
@@ -434,8 +447,25 @@ function sprayClusters(center: { latitude: number; longitude: number }, radiusMe
     .sort((a, b) => a.distanceMeters - b.distanceMeters);
 }
 
+function setSprayVisibility(user: UserProfile, sprayId: string, request: SetSprayVisibilityRequest): SetSprayVisibilityResponse {
+  const spray = findSpray(sprayId);
+  if (spray.ownerUserId !== user.id) {
+    throw new HttpError(403, "Only the owner can change this spray visibility.");
+  }
+
+  const visibility = assertSprayVisibility(request.visibility);
+  spray.visibility = visibility;
+  spray.updatedAt = new Date().toISOString();
+  audit("spray.visibility", "spray", spray.id, user.id, { visibility });
+  persist();
+  return { spray };
+}
+
 function reportSpray(user: UserProfile, sprayId: string, request: ReportSprayRequest): ReportSprayResponse {
   const spray = findSpray(sprayId);
+  if (!canViewSpray(spray, user)) {
+    throw new HttpError(404, "Spray not found.");
+  }
   if (!request.reason || !reportReasons.has(request.reason)) {
     throw new HttpError(400, "Report reason is required.");
   }
@@ -504,9 +534,9 @@ function createLocationDenylistEntry(request: CreateLocationDenylistEntryRequest
   return entry;
 }
 
-function findVisibleSpray(id: string): SprayPiece {
+function findVisibleSpray(id: string, user?: UserProfile): SprayPiece {
   const spray = findSpray(id);
-  if (spray.moderationStatus === "removed") {
+  if (!canViewSpray(spray, user)) {
     throw new HttpError(404, "Spray not found.");
   }
   return spray;
@@ -525,6 +555,30 @@ function assertLocationAllowed(point: { latitude: number; longitude: number }) {
   if (blocked) {
     throw new HttpError(403, `Spray creation is disabled here: ${blocked.name}`);
   }
+}
+
+function assertSprayVisibility(value: unknown): SprayVisibility {
+  if (typeof value !== "string" || !isSprayVisibility(value)) {
+    throw new HttpError(400, "Spray visibility must be public, unlisted, or private.");
+  }
+  return value;
+}
+
+function canDiscoverSpray(spray: SprayPiece, user?: UserProfile): boolean {
+  if (spray.moderationStatus !== "visible" && spray.moderationStatus !== "reported") {
+    return false;
+  }
+  return spray.visibility === "public" || spray.ownerUserId === user?.id;
+}
+
+function canViewSpray(spray: SprayPiece, user?: UserProfile): boolean {
+  if (spray.moderationStatus === "removed") {
+    return false;
+  }
+  if (spray.moderationStatus === "hidden" && spray.ownerUserId !== user?.id) {
+    return false;
+  }
+  return spray.visibility === "public" || spray.ownerUserId === user?.id;
 }
 
 function requireSession(request: IncomingMessage): StoredSession {

@@ -12,12 +12,15 @@ not modify physical property.
 - Sign-in: Apple, Google, and Facebook are modeled. Sign in with Apple remains
   available wherever other social account creation providers are offered.
 - Location: when-in-use location for nearby discovery and piece creation.
+- Visibility: users can publish to everyone or keep a piece owner-only for
+  non-public places.
 
 ## UGC Safety
 
 The product includes report, block, owner delete, admin hide/remove,
-moderation audit log, and location denylist primitives. Production release
-must connect these controls to real admin operations before public launch.
+owner visibility controls, moderation audit log, and location denylist
+primitives. Production release must connect these controls to real admin
+operations before public launch.
 
 ## Apple Toolchain Boundary
 

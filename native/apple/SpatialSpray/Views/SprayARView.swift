@@ -10,6 +10,7 @@ struct SprayARView: View {
     @State private var points: [SprayPoint] = []
     @State private var selectedColor = "#ef4444"
     @State private var nozzle = "soft-cap"
+    @State private var visibility = "public"
 
     private let geo = GeoPoint(latitude: 37.7749, longitude: -122.4194, altitudeMeters: nil, horizontalAccuracyMeters: 10)
 
@@ -42,7 +43,15 @@ struct SprayARView: View {
                         Text("Drip").tag("drip")
                     }
                     .pickerStyle(.segmented)
+                }
 
+                Picker("Visibility", selection: $visibility) {
+                    Text("Everyone").tag("public")
+                    Text("Only me").tag("private")
+                }
+                .pickerStyle(.segmented)
+
+                HStack {
                     Button("Publish") {
                         publish()
                     }
@@ -72,7 +81,13 @@ struct SprayARView: View {
                 rollDegrees: 0
             )
         )
-        session.publishSpray(title: "Spray by @\(session.user?.username ?? "artist")", geo: geo, anchor: anchor, strokes: [stroke])
+        session.publishSpray(
+            title: "Spray by @\(session.user?.username ?? "artist")",
+            geo: geo,
+            anchor: anchor,
+            strokes: [stroke],
+            visibility: visibility
+        )
         points.removeAll()
     }
 }

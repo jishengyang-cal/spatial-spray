@@ -9,6 +9,7 @@ data to let users create and discover digital spray pieces.
 - Unique Spatial Spray username.
 - Spray piece location, approximate discovery distance, surface anchor payload,
   stroke data, color/nozzle metadata, and optional preview media.
+- Spray piece visibility choice: public discovery or owner-only viewing.
 - Reports, blocks, moderation actions, and audit events.
 - Device platform and app diagnostics needed to operate the service.
 
@@ -19,6 +20,9 @@ metadata, not continuous live user tracking. Nearby discovery should use
 coarsened coordinates for public listings and reveal exact anchor data only
 when the user is physically near the target.
 
+Private spray pieces are returned only to their owner in the current API and
+are excluded from other users' nearby discovery and map clusters.
+
 ## Camera and AR
 
 Camera and AR data are used to place digital overlays and resolve anchors.
@@ -27,8 +31,9 @@ asks for permission and documents the purpose.
 
 ## User Controls
 
-Users must be able to delete their own spray pieces, report public pieces,
-block users, and request takedown or location exclusion review.
+Users must be able to choose whether a spray piece is public or owner-only,
+delete their own spray pieces, report public pieces, block users, and request
+takedown or location exclusion review.
 
 ## Secrets
 

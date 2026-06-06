@@ -9,13 +9,14 @@ requirements, not late-stage patches.
 - Report a spray piece.
 - Block a user.
 - Delete or hide your own spray pieces.
+- Choose whether a spray piece is public or visible only to its owner.
 - View why location and camera permissions are needed.
 - Avoid revealing exact live location of other users.
 
 The MVP implements reporting, blocking, owner deletion, admin hide/remove,
-location denylist, and moderation audit primitives. A production release still
-needs an operated admin moderation queue, escalation rules, and support
-workflow.
+owner visibility changes, location denylist, and moderation audit primitives.
+A production release still needs an operated admin moderation queue, escalation
+rules, and support workflow.
 
 ## Location Policy
 
@@ -27,6 +28,7 @@ Production must support:
 
 - coordinate precision reduction for public listing
 - exact anchor payload only after user is physically nearby
+- owner-only visibility for non-public places such as homes and companies
 - private-property and sensitive-location takedown workflow
 - location exclusion zones for schools, hospitals, government buildings,
   residential addresses, and user-configured banned areas
@@ -39,6 +41,7 @@ Public spray pieces are UGC. Production must include:
 - block flow
 - admin moderation queue
 - owner delete flow
+- owner public/private visibility controls
 - location denylist
 - moderation audit log
 - abuse detection

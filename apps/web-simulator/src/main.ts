@@ -4,6 +4,7 @@ import type {
   CreateSprayPieceRequest,
   NearbySpraysResponse,
   NozzleType,
+  SprayVisibility,
   SprayCluster,
   SprayClustersResponse,
   SprayPiece,
@@ -21,6 +22,7 @@ interface State {
   user: UserProfile | null;
   selectedColor: string;
   nozzle: NozzleType;
+  sprayVisibility: SprayVisibility;
   nearby: SprayPiece[];
   clusters: SprayCluster[];
   selectedSprayId: string | null;
@@ -35,6 +37,7 @@ const state: State = {
   user: null,
   selectedColor: colors[0]!,
   nozzle: "soft-cap",
+  sprayVisibility: "public",
   nearby: [],
   clusters: [],
   selectedSprayId: null,
@@ -174,6 +177,14 @@ function renderRightPanel() {
         <select data-action="nozzle" data-testid="nozzle-select">
           ${(["soft-cap", "fat-cap", "skinny-cap", "drip"] as NozzleType[]).map((nozzle) => `<option value="${nozzle}" ${nozzle === state.nozzle ? "selected" : ""}>${nozzle}</option>`).join("")}
         </select>
+        <label class="field">
+          <span>Visibility</span>
+          <select data-action="visibility" data-testid="visibility-select">
+            <option value="public" ${state.sprayVisibility === "public" ? "selected" : ""}>Show to everyone</option>
+            <option value="private" ${state.sprayVisibility === "private" ? "selected" : ""}>Only me</option>
+          </select>
+        </label>
+        <div class="muted">Use Only me for home, company, and other non-public places.</div>
         <button class="primary" data-action="publish" data-testid="publish-spray">Publish current spray</button>
         <button data-action="clear-canvas">Clear canvas</button>
       </div>
@@ -181,7 +192,7 @@ function renderRightPanel() {
     <div class="section">
       <h2>Nearby</h2>
       <div class="stack" data-testid="nearby-list">
-        ${state.nearby.map(renderSprayCard).join("") || `<div class="muted">No public spray nearby</div>`}
+        ${state.nearby.map(renderSprayCard).join("") || `<div class="muted">No spray nearby</div>`}
       </div>
     </div>
     ${renderSelectedSpray()}
@@ -193,7 +204,10 @@ function renderSprayCard(spray: SprayPiece) {
   return `
     <div class="spray-card">
       <div class="spray-title">${escapeHtml(spray.title)}</div>
-      <div class="muted">@${spray.username} · ${spray.distanceMeters ?? 0}m · ${spray.moderationStatus}</div>
+      <div class="meta-row">
+        <span class="visibility-badge ${spray.visibility}">${visibilityLabel(spray.visibility)}</span>
+        <span class="muted">@${spray.username} · ${spray.distanceMeters ?? 0}m · ${spray.moderationStatus}</span>
+      </div>
       <button data-select="${spray.id}">Details</button>
       <button class="danger" data-report="${spray.id}">Report</button>
     </div>
@@ -213,9 +227,10 @@ function renderSelectedSpray() {
       <div class="spray-card" data-testid="selected-spray">
         <div class="spray-title">${escapeHtml(spray.title)}</div>
         <div class="muted">@${spray.username} · ${spray.distanceMeters ?? 0}m</div>
-        <div class="muted">anchor: ${spray.anchor.provider} · strokes: ${spray.strokes.length}</div>
+        <div class="muted">visibility: ${visibilityLabel(spray.visibility)} · anchor: ${spray.anchor.provider} · strokes: ${spray.strokes.length}</div>
         <div class="stack">
           <button data-block="${spray.ownerUserId}">Block artist</button>
+          ${ownSpray ? `<button data-visibility="${spray.id}" data-next-visibility="${spray.visibility === "public" ? "private" : "public"}" data-testid="toggle-visibility">${spray.visibility === "public" ? "Hide from everyone" : "Show to everyone"}</button>` : ""}
           ${ownSpray ? `<button class="danger" data-delete="${spray.id}">Delete my spray</button>` : ""}
           <button class="danger" data-admin-hide="${spray.id}">Admin hide</button>
         </div>
@@ -259,6 +274,9 @@ function bindEvents() {
   document.querySelector<HTMLSelectElement>("[data-action='nozzle']")?.addEventListener("change", (event) => {
     state.nozzle = (event.currentTarget as HTMLSelectElement).value as NozzleType;
   });
+  document.querySelector<HTMLSelectElement>("[data-action='visibility']")?.addEventListener("change", (event) => {
+    state.sprayVisibility = (event.currentTarget as HTMLSelectElement).value as SprayVisibility;
+  });
   document.querySelector<HTMLButtonElement>("[data-action='publish']")?.addEventListener("click", () => void publishSpray());
   document.querySelector<HTMLButtonElement>("[data-action='clear-canvas']")?.addEventListener("click", () => {
     state.strokes = [];
@@ -277,6 +295,9 @@ function bindEvents() {
   });
   document.querySelectorAll<HTMLButtonElement>("[data-delete]").forEach((button) => {
     button.addEventListener("click", () => void deleteSpray(button.dataset.delete ?? ""));
+  });
+  document.querySelectorAll<HTMLButtonElement>("[data-visibility]").forEach((button) => {
+    button.addEventListener("click", () => void setSprayVisibility(button.dataset.visibility ?? "", button.dataset.nextVisibility as SprayVisibility));
   });
   document.querySelectorAll<HTMLButtonElement>("[data-block]").forEach((button) => {
     button.addEventListener("click", () => void blockArtist(button.dataset.block ?? ""));
@@ -427,7 +448,7 @@ async function publishSpray() {
   const payload: CreateSprayPieceRequest = {
     title: `Spray by @${state.user.username}`,
     geo: currentLocation,
-    visibility: "public",
+    visibility: state.sprayVisibility,
     anchor: {
       provider: "manual-local",
       surfacePose: {
@@ -443,13 +464,25 @@ async function publishSpray() {
       : state.strokes
   };
 
-  await api("/sprays", { method: "POST", body: payload });
+  const visibility = state.sprayVisibility;
+  const created = await api<{ spray: SprayPiece }>("/sprays", { method: "POST", body: payload });
   state.currentPoints = [];
   state.strokes = [];
-  state.status = "Spray published nearby";
+  state.status = visibility === "public" ? "Spray published nearby" : "Private spray saved for you";
   await loadNearby();
-  state.selectedSprayId = state.nearby[0]?.id ?? null;
+  state.selectedSprayId = created.spray.id;
   state.mode = "map";
+  render();
+}
+
+async function setSprayVisibility(id: string, visibility: SprayVisibility) {
+  if (!id || !visibility) {
+    return;
+  }
+  await api<{ spray: SprayPiece }>(`/sprays/${id}/visibility`, { method: "POST", body: { visibility } });
+  state.status = visibility === "public" ? "Spray is visible to everyone" : "Spray is visible only to you";
+  await loadNearby();
+  state.selectedSprayId = id;
   render();
 }
 
@@ -511,4 +544,15 @@ function randomId() {
 
 function escapeHtml(value: string): string {
   return value.replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#039;" })[char] ?? char);
+}
+
+function visibilityLabel(visibility: SprayVisibility): string {
+  switch (visibility) {
+    case "public":
+      return "Everyone";
+    case "unlisted":
+      return "Unlisted";
+    case "private":
+      return "Only me";
+  }
 }

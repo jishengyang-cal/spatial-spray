@@ -15,21 +15,21 @@
       "title": "Persistent API and moderation control plane",
       "capabilities": ["linux-runnable"],
       "command": "pnpm test:api",
-      "produces": ["dev/provider login boundary", "refresh session", "unique username", "nearby query", "map clusters", "spray creation", "report/block", "admin moderation", "location denylist", "audit log"]
+      "produces": ["dev/provider login boundary", "refresh session", "unique username", "nearby query", "map clusters", "spray creation", "owner visibility controls", "report/block", "admin moderation", "location denylist", "audit log"]
     },
     {
       "id": "web-simulator",
       "title": "Map and camera simulator",
       "capabilities": ["linux-runnable"],
       "command": "pnpm test:e2e",
-      "produces": ["login flow", "username flow", "spray canvas", "nearby map"]
+      "produces": ["login flow", "username flow", "spray canvas", "visibility selection", "nearby map"]
     },
     {
       "id": "native-ios",
       "title": "iPhone AR client",
       "capabilities": ["mac-builder-required", "device-required"],
       "command": "pnpm native:ios-build:submit",
-      "produces": ["MapKit nearby discovery", "ARKit camera spray capture", "RealityKit preview paint", "spray publish"]
+      "produces": ["MapKit nearby discovery", "ARKit camera spray capture", "RealityKit preview paint", "spray publish", "owner visibility controls"]
     },
     {
       "id": "native-visionos",
@@ -50,7 +50,7 @@
       "title": "Store and UGC compliance",
       "capabilities": ["apple-account-required"],
       "command": "pnpm compliance:check",
-      "produces": ["sign-in boundary", "UGC controls", "location privacy", "native toolchain boundary", "privacy/content/review drafts"]
+      "produces": ["sign-in boundary", "UGC controls", "owner-only visibility boundary", "location privacy", "native toolchain boundary", "privacy/content/review drafts"]
     },
     {
       "id": "ci",

@@ -10,7 +10,7 @@ does not modify real buildings or property.
 - Apple Vision Pro: sign-in, nearby discovery, spatial spray creation, mixed
   immersive viewing.
 - Web simulator: Linux-runnable product loop for contracts, API, map behavior,
-  and spray brush prototyping.
+  spray brush prototyping, and owner visibility controls.
 - Admin console: moderation and location policy control plane.
 - Mac Builder adapter: remote build/test/archive control plane for native
   Apple work.
@@ -37,6 +37,7 @@ Data plane
   Sessions and refresh tokens
   Spray pieces
   Anchor payloads
+  Spray visibility state
   Reports
   Block lists
   Location denylists
@@ -83,6 +84,11 @@ Each piece contains:
 - moderation status
 - optional preview image URL
 
+Visibility is owner-controlled. `public` pieces enter nearby discovery and map
+clusters for everyone. `private` and `unlisted` pieces are returned only to the
+owner, which keeps home, company, and other non-public creation locations out
+of other users' nearby views.
+
 The first brush engine models spray with particles, overspray, opacity,
 nozzle profile, and drips. Native rendering should map the same stroke model to
 RealityKit decals, materials, mesh textures, or Metal-backed custom materials.
@@ -91,7 +97,8 @@ RealityKit decals, materials, mesh textures, or Metal-backed custom materials.
 
 Discovery is a two-step model:
 
-1. Geo discovery: query nearby public spray pieces by distance.
+1. Geo discovery: query nearby public spray pieces by distance, plus the
+   signed-in owner's private pieces.
 2. AR resolution: scan the nearby physical surface and resolve an anchor.
 
 Supported anchor providers are modeled as:
@@ -110,7 +117,9 @@ placement until device tests prove it.
 
 The system includes report and block primitives from the first version.
 The current service also includes owner delete, admin hide/remove,
-location denylist, and audit log primitives. Production must add:
+owner visibility changes, location denylist, and audit log primitives.
+Private visibility reduces discovery exposure; it does not bypass content,
+property, or safety policy. Production must add:
 
 - content review queue
 - user suspension
@@ -130,7 +139,9 @@ archives, signing, and artifact collection on macOS.
 - `packages/contracts`: shared data contracts and validation helpers.
 - `packages/brush-engine`: spray particle, drip, material, and decal mesh generation.
 - `services/api`: persistent local API with auth sessions, nearby discovery,
-  clusters, UGC moderation, location denylist, and audit log.
-- `apps/web-simulator`: product simulator with map, camera, and admin flows.
+  clusters, owner visibility controls, UGC moderation, location denylist, and
+  audit log.
+- `apps/web-simulator`: product simulator with map, camera, visibility, and
+  admin flows.
 - `native/apple`: iOS AR and visionOS mixed immersive source scaffold.
 - `scripts/mac-builder-*.mjs`: remote Mac Builder client and local mock.

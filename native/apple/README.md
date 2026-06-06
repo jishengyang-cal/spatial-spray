@@ -9,9 +9,9 @@ device access.
 ## Targets
 
 - `SpatialSprayiOS`: iPhone app for sign-in, username, map discovery, camera
-  spray creation, and AR viewing.
+  spray creation, owner visibility controls, and AR viewing.
 - `SpatialSprayVision`: Apple Vision Pro app for sign-in, nearby discovery,
-  spatial spray creation, and immersive viewing.
+  spatial spray creation, owner visibility controls, and immersive viewing.
 
 ## Mac Builder commands
 

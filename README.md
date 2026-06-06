@@ -6,7 +6,8 @@ The product is a location-aware AR creation and discovery app:
 
 - users sign in with Apple, Google, or Facebook and claim a unique username
 - users create digital spray paint on real surfaces
-- nearby spray pieces can be discovered by distance and map mode
+- public spray pieces can be discovered by distance and map mode
+- private spray pieces remain visible only to their owner for home, company, and other non-public places
 - iPhone users can create and view with camera-based AR
 - Vision Pro users can create and view in spatial AR
 
@@ -35,10 +36,11 @@ web simulator: http://127.0.0.1:5177
 - Dev-mode provider login adapters for Apple, Google, and Facebook.
 - Unique username reservation.
 - Location-indexed spray piece creation and nearby lookup.
+- Owner-controlled spray visibility: public for nearby discovery or private for owner-only viewing.
 - Persistent local API state with refresh sessions and provider-login boundary.
 - Spray stroke model with colors, nozzle, particles, overspray, drips, and AR decal mesh data.
 - UGC moderation primitives: report, block user, owner delete, admin hide/remove, audit log, and location denylist.
-- Web simulator for login, username, map discovery, clusters, camera spray canvas, and moderation actions.
+- Web simulator for login, username, map discovery, clusters, camera spray canvas, visibility controls, and moderation actions.
 - Native Apple source scaffold for iPhone AR spray and Vision Pro mixed immersive viewing.
 - Mac Builder adapter scripts with local mock worker for native build job submission.
 

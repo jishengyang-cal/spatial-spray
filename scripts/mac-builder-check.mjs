@@ -64,13 +64,16 @@ function buildRequest(kind) {
   const branch = git(["branch", "--show-current"]) || "main";
   const remoteUrl = git(["remote", "get-url", "origin"]);
   const isVision = kind.startsWith("visionos");
+  const requestedAt = new Date().toISOString();
+  const requestId = `spatial-spray-${kind}-${Date.now()}`;
+  const scheme = isVision ? "SpatialSprayVision" : "SpatialSprayiOS";
 
   return {
-    kind,
+    kind: "build",
     repoRef: {
       provider: "github",
       repository: "jishengyang-cal/spatial-spray",
-      remoteUrl,
+      remoteUrl: process.env.SPATIAL_SPRAY_REPO_REMOTE_URL ?? publicGithubRemoteUrl(remoteUrl),
       branch,
       commitSha
     },
@@ -78,18 +81,45 @@ function buildRequest(kind) {
       sourceRoot: "native/apple",
       generator: "xcodegen",
       generatorSpecPath: "native/apple/project.yml",
-      projectPath: "native/apple/SpatialSpray.xcodeproj"
+      projectPath: "native/apple/SpatialSpray.xcodeproj",
+      scheme
     },
     target: {
-      scheme: isVision ? "SpatialSprayVision" : "SpatialSprayiOS",
+      scheme,
       configuration: "Debug",
       destination: isVision ? "platform=visionOS Simulator,name=Apple Vision Pro" : "platform=iOS Simulator,name=iPhone 16 Pro",
       sdk: isVision ? "xrsimulator" : "iphonesimulator"
     },
     capabilities: ["mac-builder-required", "mcp-candidate"],
-    reason: `Spatial Spray ${kind}`,
-    actorId: process.env.USER ?? "local-user"
+    audit: {
+      requestId,
+      actorId: process.env.SPATIAL_SPRAY_ACTOR_ID ?? process.env.USER ?? "local-user",
+      reason: `Spatial Spray ${kind}`,
+      source: "spatial-spray-cli",
+      requestedAt,
+      decision: {
+        status: "allowed",
+        policyId: process.env.SPATIAL_SPRAY_POLICY_ID ?? "spatial-spray-local-mac-builder-policy",
+        reason: process.env.SPATIAL_SPRAY_APPROVAL_REASON ?? "Local operator requested Mac Builder validation.",
+        decidedBy: process.env.SPATIAL_SPRAY_APPROVED_BY ?? process.env.USER ?? "local-user",
+        decidedAt: requestedAt
+      },
+      traceId: requestId
+    },
+    metadata: {
+      adapter: "spatial-spray",
+      requestedKind: kind,
+      platform: isVision ? "visionos" : "ios"
+    }
   };
+}
+
+function publicGithubRemoteUrl(remoteUrl) {
+  const sshMatch = /^git@github.com[^:]*:([^/]+\/[^/.]+)(?:\.git)?$/.exec(remoteUrl);
+  if (sshMatch) {
+    return `https://github.com/${sshMatch[1]}.git`;
+  }
+  return remoteUrl;
 }
 
 function authHeaders() {
